@@ -31,7 +31,10 @@ impl command::Command for Main {
     fn go(&mut self, streams: &mut StdStreams<'_>, args: &[String]) -> u8 {
         let mut processor = match self.processor_factory.make(args) {
             Ok(processor) => processor,
-            Err(e) => unimplemented! ("{:?}", e),
+            Err(e) => {
+                writeln!(streams.stderr, "Can't connect to Daemon or Node ({:?}). Probably this means the Daemon isn't running.", e).expect ("writeln! failed");
+                return 1;
+            },
         };
         let command_parts = match Self::extract_subcommand(args) {
             Ok(v) => v,
@@ -302,7 +305,7 @@ mod tests {
         assert_eq!(stream_holder.stdout.get_string(), "".to_string());
         assert_eq!(
             stream_holder.stderr.get_string(),
-            "Can't connect to Daemon or Node. Probably this means the Daemon isn't running.\n".to_string()
+            "Can't connect to Daemon or Node (ConnectionRefused). Probably this means the Daemon isn't running.\n".to_string()
         );
     }
 }
