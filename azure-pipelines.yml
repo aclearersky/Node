@@ -80,7 +80,7 @@ stages:
             condition: ne(variables.CACHE_ONLY, 'true')
             displayName: "Prepare Node build"
 
-          - bash: ci/sccache.sh '$(Pipeline.Workspace)' && node/ci/all.sh '$(Pipeline.Workspace)' && dns_utility/ci/all.sh '$(Pipeline.Workspace)'
+          - bash: ci/sccache.sh '$(Pipeline.Workspace)' && node/ci/all.sh '$(Pipeline.Workspace)' && dns_utility/ci/all.sh '$(Pipeline.Workspace)' && masq/ci/all.sh '$(Pipeline.Workspace)'
             condition: ne(variables.CACHE_ONLY, 'true')
             displayName: "Build Node and run tests"
 
