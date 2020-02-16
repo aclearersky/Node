@@ -1,6 +1,6 @@
 // Copyright (c) 2019-2020, MASQ (https://masq.ai) and/or its affiliates. All rights reserved.
 
-use crate::command_context::ContextError::RedirectFailure;
+use crate::command_context::ContextError::{RedirectFailure, ConnectionRefused};
 use crate::websockets_client::{ClientError, NodeConnection};
 use masq_lib::messages::{FromMessageBody, UiRedirect};
 use masq_lib::ui_gateway::MessagePath::{OneWay, TwoWay};
@@ -79,12 +79,15 @@ impl CommandContext for CommandContextReal {
 
 impl CommandContextReal {
     pub fn new(port: u16) -> Result<Self, ContextError> {
-        Ok(Self {
-            connection: NodeConnection::new(port).expect("Couldn't connect to Daemon or Node"),
-            stdin: Box::new(io::stdin()),
-            stdout: Box::new(io::stdout()),
-            stderr: Box::new(io::stderr()),
-        })
+        match NodeConnection::new (port) {
+            Ok (connection) => Ok(Self {
+                connection,
+                stdin: Box::new(io::stdin()),
+                stdout: Box::new(io::stdout()),
+                stderr: Box::new(io::stderr()),
+            }),
+            Err (e) => Err(ConnectionRefused(format! ("{:?}", e))),
+        }
     }
 
     fn process_redirect(&mut self, redirect: UiRedirect) -> Result<NodeToUiMessage, ContextError> {
@@ -113,7 +116,7 @@ impl CommandContextReal {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::command_context::ContextError::{ConnectionDropped, PayloadError, RedirectFailure};
+    use crate::command_context::ContextError::{ConnectionDropped, PayloadError, RedirectFailure, ConnectionRefused};
     use crate::test_utils::mock_websockets_server::MockWebSocketsServer;
     use crate::websockets_client::nfum;
     use masq_lib::messages::UiSetup;
@@ -165,6 +168,19 @@ mod tests {
             stderr_arc.lock().unwrap().get_string(),
             "This is stderr.".to_string()
         );
+    }
+
+    #[test]
+    fn works_when_server_isnt_present() {
+        let port = find_free_port();
+
+        let result = CommandContextReal::new(port);
+
+        match result {
+            Err (ConnectionRefused(_)) => (),
+            Ok (_) => panic! ("Succeeded when it should have failed"),
+            Err (e) => panic! ("Expected ConnectionRefused; got {:?}", e),
+        }
     }
 
     #[test]

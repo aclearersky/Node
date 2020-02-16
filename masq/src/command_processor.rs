@@ -1,6 +1,6 @@
 // Copyright (c) 2019-2020, MASQ (https://masq.ai) and/or its affiliates. All rights reserved.
 
-use crate::command_context::CommandContext;
+use crate::command_context::{CommandContext, ContextError};
 use crate::command_context::CommandContextReal;
 use crate::commands::{Command, CommandError};
 use crate::schema::app;
@@ -19,7 +19,8 @@ impl CommandProcessorFactory for CommandProcessorFactoryReal {
         let ui_port = value_t!(matches, "ui-port", u16).expect("ui-port is not properly defaulted");
         match CommandContextReal::new(ui_port) {
             Ok(context) => Ok(Box::new(CommandProcessorReal { context })),
-            Err (e) => unimplemented! ("{:?}", e),
+            Err (ContextError::ConnectionRefused(_)) => Err (CommandError::ConnectionRefused),
+            Err (e) => panic! ("Unexpected error: {:?}", e),
         }
     }
 }
@@ -71,6 +72,25 @@ mod tests {
                 Ok(_) => Ok(()),
                 Err(e) => Err(CommandError::Other(format!("{:?}", e))),
             }
+        }
+    }
+
+    #[test]
+    fn handles_nonexistent_server() {
+        let port = find_free_port();
+        let args = [
+            "masq".to_string(),
+            "--ui-port".to_string(),
+            format!("{}", port),
+        ];
+        let subject = CommandProcessorFactoryReal::new();
+
+        let result = subject.make(&args);
+
+        match result {
+            Ok (_) => panic! ("Success! Was hoping for failure."),
+            Err (CommandError::ConnectionRefused) => (),
+            Err (e) => panic! ("Expected ConnectionRefused, got {:?}", e),
         }
     }
 

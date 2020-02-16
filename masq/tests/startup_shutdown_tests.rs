@@ -8,6 +8,18 @@ use std::time::Duration;
 mod utils;
 
 #[test]
+fn masq_without_daemon_integration() {
+    let masq_handle =
+        MasqProcess::new().start_noninteractive(vec!["setup"]);
+
+    let (stdout, stderr, exit_code) = masq_handle.stop();
+
+    assert_eq! (&stdout, "", "{}", stdout);
+    assert_eq! (&stderr, "Can't connect to Daemon or Node (ConnectionRefused). Probably this means the Daemon isn't running.\n", "{}", stderr);
+    assert_eq! (exit_code, 1);
+}
+
+#[test]
 fn handles_startup_and_shutdown_integration() {
     let daemon_handle = DaemonProcess::new().start(5333);
 
