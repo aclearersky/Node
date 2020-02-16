@@ -10,6 +10,7 @@ use std::io::{Read, Write};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ContextError {
+    ConnectionRefused(String),
     ConnectionDropped(String),
     PayloadError(u64, String),
     RedirectFailure(String),
@@ -77,13 +78,13 @@ impl CommandContext for CommandContextReal {
 }
 
 impl CommandContextReal {
-    pub fn new(port: u16) -> Self {
-        Self {
+    pub fn new(port: u16) -> Result<Self, ContextError> {
+        Ok(Self {
             connection: NodeConnection::new(port).expect("Couldn't connect to Daemon or Node"),
             stdin: Box::new(io::stdin()),
             stdout: Box::new(io::stdout()),
             stderr: Box::new(io::stderr()),
-        }
+        })
     }
 
     fn process_redirect(&mut self, redirect: UiRedirect) -> Result<NodeToUiMessage, ContextError> {
@@ -140,7 +141,7 @@ mod tests {
             body: UiShutdownResponse {}.tmb(1234),
         });
         let stop_handle = server.start();
-        let mut subject = CommandContextReal::new(port);
+        let mut subject = CommandContextReal::new(port).unwrap();
         subject.stdin = Box::new(stdin);
         subject.stdout = Box::new(stdout);
         subject.stderr = Box::new(stderr);
@@ -179,7 +180,7 @@ mod tests {
             },
         });
         let stop_handle = server.start();
-        let mut subject = CommandContextReal::new(port);
+        let mut subject = CommandContextReal::new(port).unwrap();
 
         let response = subject.transact(nfum(UiSetup { values: vec![] }));
 
@@ -192,7 +193,7 @@ mod tests {
         let port = find_free_port();
         let server = MockWebSocketsServer::new(port).queue_string("disconnect");
         let stop_handle = server.start();
-        let mut subject = CommandContextReal::new(port);
+        let mut subject = CommandContextReal::new(port).unwrap();
 
         let response = subject.transact(nfum(UiSetup { values: vec![] }));
 
@@ -239,7 +240,7 @@ mod tests {
             }
             .tmb(1234), // will be ignored
         };
-        let mut subject = CommandContextReal::new(daemon_port);
+        let mut subject = CommandContextReal::new(daemon_port).unwrap();
 
         let result = subject.transact(request).unwrap();
 
@@ -292,7 +293,7 @@ mod tests {
             }
             .tmb(1234),
         };
-        let mut subject = CommandContextReal::new(daemon_port);
+        let mut subject = CommandContextReal::new(daemon_port).unwrap();
 
         let result = subject.transact(request);
 
@@ -327,7 +328,7 @@ mod tests {
             }
             .tmb(1234),
         };
-        let mut subject = CommandContextReal::new(daemon_port);
+        let mut subject = CommandContextReal::new(daemon_port).unwrap();
 
         let result = subject.transact(request);
 

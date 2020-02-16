@@ -7,18 +7,20 @@ use crate::schema::app;
 use clap::value_t;
 
 pub trait CommandProcessorFactory {
-    fn make(&self, args: &[String]) -> Box<dyn CommandProcessor>;
+    fn make(&self, args: &[String]) -> Result<Box<dyn CommandProcessor>, CommandError>;
 }
 
 #[derive(Default)]
 pub struct CommandProcessorFactoryReal {}
 
 impl CommandProcessorFactory for CommandProcessorFactoryReal {
-    fn make(&self, args: &[String]) -> Box<dyn CommandProcessor> {
+    fn make(&self, args: &[String]) -> Result<Box<dyn CommandProcessor>, CommandError> {
         let matches = app().get_matches_from(args);
         let ui_port = value_t!(matches, "ui-port", u16).expect("ui-port is not properly defaulted");
-        let context = CommandContextReal::new(ui_port);
-        Box::new(CommandProcessorReal { context })
+        match CommandContextReal::new(ui_port) {
+            Ok(context) => Ok(Box::new(CommandProcessorReal { context })),
+            Err (e) => unimplemented! ("{:?}", e),
+        }
     }
 }
 
@@ -87,7 +89,7 @@ mod tests {
         });
         let stop_handle = server.start();
 
-        let mut result = subject.make(&args);
+        let mut result = subject.make(&args).unwrap();
 
         let command = TestCommand {};
         result.process(Box::new(command)).unwrap();
