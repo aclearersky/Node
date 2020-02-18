@@ -34,7 +34,7 @@ impl command::Command for Main {
             Err(e) => {
                 writeln!(streams.stderr, "Can't connect to Daemon or Node ({:?}). Probably this means the Daemon isn't running.", e).expect ("writeln! failed");
                 return 1;
-            },
+            }
         };
         let command_parts = match Self::extract_subcommand(args) {
             Ok(v) => v,
@@ -95,6 +95,7 @@ impl Main {
 mod tests {
     use super::*;
     use masq_cli_lib::command_context::ContextError::Other;
+    use masq_cli_lib::commands::CommandError;
     use masq_cli_lib::commands::CommandError::Transmission;
     use masq_cli_lib::test_utils::mocks::{
         CommandContextMock, CommandFactoryMock, CommandProcessorFactoryMock, CommandProcessorMock,
@@ -105,7 +106,6 @@ mod tests {
     use masq_lib::test_utils::fake_stream_holder::FakeStreamHolder;
     use masq_lib::ui_gateway::NodeFromUiMessage;
     use std::sync::{Arc, Mutex};
-    use masq_cli_lib::commands::CommandError;
 
     #[test]
     fn go_works_when_everything_is_copacetic() {
@@ -208,7 +208,8 @@ mod tests {
     fn go_works_when_given_no_subcommand() {
         let command_factory = CommandFactoryMock::new();
         let processor = CommandProcessorMock::new();
-        let processor_factory = CommandProcessorFactoryMock::new().make_result(Ok(Box::new(processor)));
+        let processor_factory =
+            CommandProcessorFactoryMock::new().make_result(Ok(Box::new(processor)));
         let mut subject = Main {
             command_factory: Box::new(command_factory),
             processor_factory: Box::new(processor_factory),
@@ -239,7 +240,8 @@ mod tests {
             .make_params(&c_make_params_arc)
             .make_result(Err(UnrecognizedSubcommand("booga".to_string())));
         let processor = CommandProcessorMock::new();
-        let processor_factory = CommandProcessorFactoryMock::new().make_result(Ok(Box::new(processor)));
+        let processor_factory =
+            CommandProcessorFactoryMock::new().make_result(Ok(Box::new(processor)));
         let mut subject = Main {
             command_factory: Box::new(command_factory),
             processor_factory: Box::new(processor_factory),
@@ -266,7 +268,8 @@ mod tests {
         let processor = CommandProcessorMock::new()
             .process_params(&process_params_arc)
             .process_result(Err(Transmission("Booga!".to_string())));
-        let processor_factory = CommandProcessorFactoryMock::new().make_result(Ok(Box::new(processor)));
+        let processor_factory =
+            CommandProcessorFactoryMock::new().make_result(Ok(Box::new(processor)));
         let mut subject = Main {
             command_factory: Box::new(command_factory),
             processor_factory: Box::new(processor_factory),
@@ -288,8 +291,8 @@ mod tests {
 
     #[test]
     fn go_works_when_daemon_is_not_running() {
-        let processor_factory = CommandProcessorFactoryMock::new()
-            .make_result(Err(CommandError::ConnectionRefused));
+        let processor_factory =
+            CommandProcessorFactoryMock::new().make_result(Err(CommandError::ConnectionRefused));
         let mut subject = Main {
             command_factory: Box::new(CommandFactoryMock::new()),
             processor_factory: Box::new(processor_factory),

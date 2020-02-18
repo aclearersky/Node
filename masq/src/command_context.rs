@@ -1,6 +1,6 @@
 // Copyright (c) 2019-2020, MASQ (https://masq.ai) and/or its affiliates. All rights reserved.
 
-use crate::command_context::ContextError::{RedirectFailure, ConnectionRefused};
+use crate::command_context::ContextError::{ConnectionRefused, RedirectFailure};
 use crate::websockets_client::{ClientError, NodeConnection};
 use masq_lib::messages::{FromMessageBody, UiRedirect};
 use masq_lib::ui_gateway::MessagePath::{OneWay, TwoWay};
@@ -79,14 +79,14 @@ impl CommandContext for CommandContextReal {
 
 impl CommandContextReal {
     pub fn new(port: u16) -> Result<Self, ContextError> {
-        match NodeConnection::new (port) {
-            Ok (connection) => Ok(Self {
+        match NodeConnection::new(port) {
+            Ok(connection) => Ok(Self {
                 connection,
                 stdin: Box::new(io::stdin()),
                 stdout: Box::new(io::stdout()),
                 stderr: Box::new(io::stderr()),
             }),
-            Err (e) => Err(ConnectionRefused(format! ("{:?}", e))),
+            Err(e) => Err(ConnectionRefused(format!("{:?}", e))),
         }
     }
 
@@ -116,7 +116,9 @@ impl CommandContextReal {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::command_context::ContextError::{ConnectionDropped, PayloadError, RedirectFailure, ConnectionRefused};
+    use crate::command_context::ContextError::{
+        ConnectionDropped, ConnectionRefused, PayloadError, RedirectFailure,
+    };
     use crate::test_utils::mock_websockets_server::MockWebSocketsServer;
     use crate::websockets_client::nfum;
     use masq_lib::messages::UiSetup;
@@ -177,9 +179,9 @@ mod tests {
         let result = CommandContextReal::new(port);
 
         match result {
-            Err (ConnectionRefused(_)) => (),
-            Ok (_) => panic! ("Succeeded when it should have failed"),
-            Err (e) => panic! ("Expected ConnectionRefused; got {:?}", e),
+            Err(ConnectionRefused(_)) => (),
+            Ok(_) => panic!("Succeeded when it should have failed"),
+            Err(e) => panic!("Expected ConnectionRefused; got {:?}", e),
         }
     }
 

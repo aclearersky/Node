@@ -219,7 +219,7 @@ where
         body: input.tmb(0),
     }) {
         Ok(ntum) => ntum,
-        Err(ContextError::ConnectionRefused(s)) => unimplemented! ("{}", s),
+        Err(ContextError::ConnectionRefused(s)) => unimplemented!("{}", s),
         Err(ContextError::ConnectionDropped(_)) => return Err(ConnectionDropped),
         Err(ContextError::PayloadError(code, message)) => return Err(Payload(code, message)),
         Err(ContextError::RedirectFailure(e)) => panic!("Couldn't redirect to Node: {:?}", e),
